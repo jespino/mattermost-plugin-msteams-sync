@@ -1,13 +1,13 @@
 {
-    "id": "com.mattermost.plugin-starter-template",
-    "name": "Plugin Starter Template",
-    "description": "This plugin serves as a starting point for writing a Mattermost plugin.",
-    "homepage_url": "https://github.com/mattermost/mattermost-plugin-starter-template",
-    "support_url": "https://github.com/mattermost/mattermost-plugin-starter-template/issues",
-    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-starter-template/releases/tag/v0.1.0",
-    "icon_path": "assets/starter-template-icon.svg",
+    "id": "com.mattermost.msteams-sync-plugin",
+    "name": "MSTeams Sync plugin",
+    "description": "Plugin to sync Mattermost channels with Microsoft Teams channels",
+    "homepage_url": "https://github.com/mattermost/mattermost-plugin-msteams-sync",
+    "support_url": "https://github.com/mattermost/mattermost-plugin-msteams-sync/issues",
+    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-msteams-sync/releases/tag/v0.1.0",
+    "icon_path": "assets/msteams-sync-icon.svg",
     "version": "0.1.0",
-    "min_server_version": "5.37.0",
+    "min_server_version": "7.0.0",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
@@ -23,6 +23,54 @@
     "settings_schema": {
         "header": "",
         "footer": "",
-        "settings": []
+        "settings": [{
+          "key": "tenantId",
+          "display_name": "Tenant ID",
+          "type": "text",
+          "help_text": "Microsoft Teams Tenant ID",
+          "default": ""
+        },{
+          "key": "clientId",
+          "display_name": "Client ID",
+          "type": "text",
+          "help_text": "Microsoft Teams Client ID",
+          "default": ""
+        },{
+          "key": "clientSecret",
+          "display_name": "Client Secret",
+          "type": "text",
+          "help_text": "Microsoft Teams Client Secret",
+          "default": ""
+        },{
+          "key": "webhookSecret",
+          "display_name": "Webhook secret",
+          "type": "text",
+          "help_text": "Microsoft Teams will use this secret to send messages to mattermost",
+          "default": ""
+        },{
+          "key": "botUsername",
+          "display_name": "Bot Username",
+          "type": "text",
+          "help_text": "Microsoft Teams Bot Username",
+          "default": ""
+        },{
+          "key": "botPassword",
+          "display_name": "Bot Password",
+          "type": "text",
+          "help_text": "Microsoft Teams Bot Password",
+          "default": ""
+        },{
+          "key": "enabledTeams",
+          "display_name": "Enabled Teams",
+          "type": "text",
+          "help_text": "Teams where syncs are enabled (comma separated Mattermost team names, empty means all enabled)",
+          "default": ""
+        },{
+          "key": "syncDirectMessages",
+          "display_name": "Sync direct and group messages",
+          "type": "bool",
+          "help_text": "Sync direct and group messages where any of the user in the conversation is a real Mattermost user connected to MS Teams account",
+          "default": ""
+        }]
     }
 }

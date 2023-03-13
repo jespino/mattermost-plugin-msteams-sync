@@ -1,0 +1,88 @@
+package main
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-plugin-msteams-sync/server/msteams"
+	"github.com/mattermost/mattermost-plugin-msteams-sync/server/store"
+)
+
+type API struct {
+	p      *Plugin
+	store  store.Store
+	router *mux.Router
+}
+
+type Activities struct {
+	Value []msteams.Activity
+}
+
+func NewAPI(p *Plugin, store store.Store) *API {
+	router := mux.NewRouter()
+	api := &API{p: p, router: router, store: store}
+
+	router.HandleFunc("/avatar/{userId:.*}", api.getAvatar).Methods("GET")
+	router.HandleFunc("/", api.processActivity).Methods("POST")
+
+	return api
+}
+
+// getAvatar returns the microsoft teams avatar
+func (a *API) getAvatar(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	userID := params["userId"]
+	photo, appErr := a.store.GetAvatarCache(userID)
+	if appErr != nil || len(photo) == 0 {
+		var err error
+		photo, err = a.p.msteamsAppClient.GetUserAvatar(userID)
+		if err != nil {
+			a.p.API.LogError("Unable to read avatar", "error", err)
+			http.Error(w, "avatar not found", http.StatusNotFound)
+			return
+		}
+
+		err = a.store.SetAvatarCache(userID, photo)
+		if err != nil {
+			a.p.API.LogError("Unable to cache the new avatar", "error", err)
+			return
+		}
+	}
+	w.Write(photo)
+}
+
+// processActivity handles the activity received from teams subscriptions
+func (a *API) processActivity(w http.ResponseWriter, req *http.Request) {
+	validationToken := req.URL.Query().Get("validationToken")
+	if validationToken != "" {
+		w.Write([]byte(validationToken))
+		return
+	}
+
+	activities := Activities{}
+	err := json.NewDecoder(req.Body).Decode(&activities)
+	if err != nil {
+		a.p.API.LogError("unable to get the activities from the message msteams server subscription message", "error", err)
+		http.Error(w, "unable to get the activities from the message", http.StatusBadRequest)
+		return
+	}
+
+	errors := ""
+	for _, activity := range activities.Value {
+		a.p.API.LogDebug("=== Recived activity ====", "activity", activity)
+		err := a.p.handleActivity(activity)
+		if err != nil {
+			a.p.API.LogError("Unable to process created activity", "activity", activity, "error", err)
+			errors = errors + err.Error() + "\n"
+		}
+	}
+	if errors != "" {
+		http.Error(w, errors, http.StatusBadRequest)
+		return
+	}
+}
+
+func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a.router.ServeHTTP(w, r)
+}
